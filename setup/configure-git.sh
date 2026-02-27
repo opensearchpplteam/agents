@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# configure-git.sh - Configure git identity and GitHub CLI authentication
+# configure-git.sh - Configure git identity, SSH key, and GitHub CLI authentication
 #
 set -euo pipefail
 
@@ -8,6 +8,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 info()    { echo -e "${BLUE}[INFO]${NC}  $*"; }
@@ -74,6 +75,91 @@ ensure_github_known_host() {
     success "Added GitHub SSH host key to known_hosts"
 }
 
+# ── SSH key generation & GitHub registration ─────────────────────────
+ensure_ssh_key() {
+    local ssh_dir="$HOME/.ssh"
+    local key_file="${ssh_dir}/id_ed25519"
+
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+
+    # Check if any SSH key already works with GitHub
+    if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        success "SSH key already registered with GitHub"
+        return 0
+    fi
+
+    # Check if a key exists
+    if [ -f "$key_file" ]; then
+        info "SSH key already exists: ${key_file}"
+    elif [ -f "${ssh_dir}/id_rsa" ]; then
+        info "SSH key already exists: ${ssh_dir}/id_rsa"
+        key_file="${ssh_dir}/id_rsa"
+    else
+        # Generate a new SSH key
+        local git_email
+        git_email=$(git config --global user.email 2>/dev/null || echo "ppl-team@ec2")
+
+        info "Generating new SSH key (ed25519)..."
+        ssh-keygen -t ed25519 -C "$git_email" -f "$key_file" -N "" </dev/tty
+        success "SSH key generated: ${key_file}"
+    fi
+
+    # Start ssh-agent and add key
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    ssh-add "$key_file" 2>/dev/null || true
+
+    # Display the public key and guide user
+    local pub_key_file="${key_file}.pub"
+    if [ ! -f "$pub_key_file" ]; then
+        error "Public key not found: ${pub_key_file}"
+        return 1
+    fi
+
+    echo ""
+    echo -e "${BOLD}────────────────────────────────────────────${NC}"
+    echo -e "${BOLD}  Register your SSH key with GitHub${NC}"
+    echo -e "${BOLD}────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "  ${BOLD}Your public key:${NC}"
+    echo ""
+    echo -e "  ${GREEN}$(cat "$pub_key_file")${NC}"
+    echo ""
+    echo -e "  ${BOLD}Steps:${NC}"
+    echo "  1. Go to: https://github.com/settings/ssh/new"
+    echo "  2. Title: $(hostname) (or any name you like)"
+    echo "  3. Key type: Authentication Key"
+    echo "  4. Paste the public key above into the \"Key\" field"
+    echo "  5. Click \"Add SSH key\""
+    echo ""
+    echo -e "${BOLD}────────────────────────────────────────────${NC}"
+    echo ""
+
+    # Wait for user to confirm
+    while true; do
+        read -r -p "Press Enter after you've added the key to GitHub (or 'q' to skip): " reply </dev/tty
+        if [[ "$reply" =~ ^[Qq]$ ]]; then
+            warn "Skipped SSH key registration. You must add it before cloning repos."
+            return 0
+        fi
+
+        # Test the connection
+        info "Testing SSH connection to GitHub..."
+        local ssh_output
+        ssh_output=$(ssh -T git@github.com 2>&1 || true)
+
+        if echo "$ssh_output" | grep -q "successfully authenticated"; then
+            success "SSH key verified — authenticated with GitHub!"
+            return 0
+        else
+            warn "SSH authentication failed. GitHub response:"
+            echo "  $ssh_output"
+            echo ""
+            warn "Make sure you pasted the key correctly. Try again."
+        fi
+    done
+}
+
 # ── GitHub CLI auth ───────────────────────────────────────────────────
 configure_gh_auth() {
     if ! command -v gh &>/dev/null; then
@@ -109,6 +195,8 @@ main() {
     configure_git_identity
     echo ""
     ensure_github_known_host
+    echo ""
+    ensure_ssh_key
     echo ""
     configure_gh_auth
 }
