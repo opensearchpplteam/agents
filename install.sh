@@ -112,12 +112,26 @@ run_script() {
         return 1
     fi
 
-    if bash "$script_path"; then
+    local exit_code=0
+    local err_output
+    err_output=$(mktemp)
+
+    bash "$script_path" 2> >(tee "$err_output" >&2) || exit_code=$?
+
+    if [ "$exit_code" -eq 0 ]; then
         success "Completed: ${script_name}"
+        rm -f "$err_output"
         return 0
     else
-        error "Failed: ${script_name}"
-        error "You can re-run this step individually after fixing the issue."
+        error "Failed: ${script_name} (exit code: ${exit_code})"
+        if [ -s "$err_output" ]; then
+            error "Last error output:"
+            tail -5 "$err_output" | while IFS= read -r line; do
+                error "  $line"
+            done
+        fi
+        error "You can re-run this step with: bash ${script_path}"
+        rm -f "$err_output"
         return 1
     fi
 }

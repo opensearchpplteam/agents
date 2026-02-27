@@ -2,7 +2,9 @@
 #
 # verify.sh - Validate all components of the PPL agent environment
 #
-set -euo pipefail
+# NOTE: No "set -e" here — this script intentionally runs commands that may
+# fail and reports pass/fail for each. We handle errors ourselves.
+#
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,14 +17,25 @@ PASS=0
 FAIL=0
 WARN_COUNT=0
 
-pass() { echo -e "  ${GREEN}PASS${NC}  $*"; ((PASS++)) || true; }
-fail() { echo -e "  ${RED}FAIL${NC}  $*"; ((FAIL++)) || true; }
-skip() { echo -e "  ${YELLOW}WARN${NC}  $*"; ((WARN_COUNT++)) || true; }
+pass() {
+    echo -e "  ${GREEN}PASS${NC}  $*"
+    PASS=$((PASS + 1))
+}
+fail() {
+    echo -e "  ${RED}FAIL${NC}  $*"
+    FAIL=$((FAIL + 1))
+}
+skip() {
+    echo -e "  ${YELLOW}WARN${NC}  $*"
+    WARN_COUNT=$((WARN_COUNT + 1))
+}
 
 # ── Checks ────────────────────────────────────────────────────────────
 check_java() {
-    if java --version 2>&1 | grep -q "21\."; then
-        pass "Java 21  $(java --version 2>&1 | head -1)"
+    local version
+    version=$(java --version 2>&1 | head -1 2>/dev/null) || true
+    if echo "$version" | grep -q "21\."; then
+        pass "Java 21  ${version}"
     else
         fail "Java 21 not found"
     fi
@@ -30,7 +43,7 @@ check_java() {
 
 check_git() {
     if command -v git &>/dev/null; then
-        pass "git      $(git --version)"
+        pass "git      $(git --version 2>/dev/null || echo 'installed')"
     else
         fail "git not found"
     fi
@@ -38,7 +51,7 @@ check_git() {
 
 check_tmux() {
     if command -v tmux &>/dev/null; then
-        pass "tmux     $(tmux -V)"
+        pass "tmux     $(tmux -V 2>/dev/null || echo 'installed')"
     else
         fail "tmux not found"
     fi
@@ -46,7 +59,9 @@ check_tmux() {
 
 check_gh() {
     if command -v gh &>/dev/null; then
-        pass "gh       $(gh --version | head -1)"
+        local version
+        version=$(gh --version 2>/dev/null | head -1) || true
+        pass "gh       ${version:-installed}"
     else
         fail "gh (GitHub CLI) not found"
     fi
@@ -54,7 +69,7 @@ check_gh() {
 
 check_node() {
     if command -v node &>/dev/null; then
-        pass "node     $(node --version)"
+        pass "node     $(node --version 2>/dev/null || echo 'installed')"
     else
         fail "Node.js not found"
     fi
@@ -112,13 +127,12 @@ check_claude_settings() {
 
     if [ ! -f "$settings" ]; then
         fail "settings ~/.claude/settings.json not found"
-        return
+        return 0
     fi
 
-    # Check key fields exist in the settings
-    if grep -q "CLAUDE_CODE_USE_BEDROCK" "$settings" && \
-       grep -q "bedrock-prod" "$settings" && \
-       grep -q "alwaysThinkingEnabled" "$settings"; then
+    if grep -q "CLAUDE_CODE_USE_BEDROCK" "$settings" 2>/dev/null && \
+       grep -q "bedrock-prod" "$settings" 2>/dev/null && \
+       grep -q "alwaysThinkingEnabled" "$settings" 2>/dev/null; then
         pass "settings ~/.claude/settings.json (Bedrock config present)"
     else
         skip "settings ~/.claude/settings.json exists but may be incomplete"
@@ -201,6 +215,8 @@ main() {
     echo ""
 
     if [ "$FAIL" -gt 0 ]; then
+        echo -e "${YELLOW}Some checks failed. Re-run the relevant setup script to fix.${NC}"
+        echo ""
         return 1
     fi
     return 0
