@@ -15,9 +15,9 @@ PASS=0
 FAIL=0
 WARN_COUNT=0
 
-pass() { echo -e "  ${GREEN}PASS${NC}  $*"; ((PASS++)); }
-fail() { echo -e "  ${RED}FAIL${NC}  $*"; ((FAIL++)); }
-skip() { echo -e "  ${YELLOW}WARN${NC}  $*"; ((WARN_COUNT++)); }
+pass() { echo -e "  ${GREEN}PASS${NC}  $*"; ((PASS++)) || true; }
+fail() { echo -e "  ${RED}FAIL${NC}  $*"; ((FAIL++)) || true; }
+skip() { echo -e "  ${YELLOW}WARN${NC}  $*"; ((WARN_COUNT++)) || true; }
 
 # ── Checks ────────────────────────────────────────────────────────────
 check_java() {
