@@ -35,7 +35,7 @@ detect_os() {
         else
             warn "Expected Amazon Linux 2023, detected: ${PRETTY_NAME:-unknown}"
             warn "Some package installation steps may not work correctly."
-            read -r -p "Continue anyway? [y/N] " reply
+            read -r -p "Continue anyway? [y/N] " reply </dev/tty
             if [[ ! "$reply" =~ ^[Yy]$ ]]; then
                 error "Aborted by user."
                 exit 1

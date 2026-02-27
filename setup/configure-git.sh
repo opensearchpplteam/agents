@@ -27,7 +27,7 @@ configure_git_identity() {
         info "  Name:  ${current_name}"
         info "  Email: ${current_email}"
         echo ""
-        read -r -p "Keep current identity? [Y/n] " reply
+        read -r -p "Keep current identity? [Y/n] " reply </dev/tty
         if [[ "$reply" =~ ^[Nn]$ ]]; then
             prompt_git_identity "$current_name" "$current_email"
         fi
@@ -45,15 +45,33 @@ prompt_git_identity() {
     local default_email="$2"
 
     echo ""
-    read -r -p "Git user name [${default_name}]: " git_name
+    read -r -p "Git user name [${default_name}]: " git_name </dev/tty
     git_name="${git_name:-$default_name}"
 
-    read -r -p "Git email [${default_email}]: " git_email
+    read -r -p "Git email [${default_email}]: " git_email </dev/tty
     git_email="${git_email:-$default_email}"
 
     git config --global user.name "$git_name"
     git config --global user.email "$git_email"
     success "Git identity set: ${git_name} <${git_email}>"
+}
+
+# ── GitHub SSH known hosts ───────────────────────────────────────────
+ensure_github_known_host() {
+    local known_hosts="$HOME/.ssh/known_hosts"
+
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+
+    if [ -f "$known_hosts" ] && grep -q "github\.com" "$known_hosts" 2>/dev/null; then
+        success "GitHub SSH host key already in known_hosts"
+        return 0
+    fi
+
+    info "Adding GitHub SSH host key to known_hosts..."
+    ssh-keyscan -t ed25519,rsa github.com >> "$known_hosts" 2>/dev/null
+    chmod 600 "$known_hosts"
+    success "Added GitHub SSH host key to known_hosts"
 }
 
 # ── GitHub CLI auth ───────────────────────────────────────────────────
@@ -74,7 +92,7 @@ configure_gh_auth() {
     warn "GitHub CLI is not authenticated."
     info "Starting interactive login..."
     echo ""
-    gh auth login -p ssh -h github.com
+    gh auth login -p ssh -h github.com </dev/tty
 
     if gh auth status &>/dev/null; then
         success "GitHub CLI authenticated successfully."
@@ -89,6 +107,8 @@ configure_gh_auth() {
 main() {
     info "Configuring Git & GitHub..."
     configure_git_identity
+    echo ""
+    ensure_github_known_host
     echo ""
     configure_gh_auth
 }

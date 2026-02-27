@@ -30,7 +30,7 @@ install_claude() {
     fi
 
     info "Installing Claude Code via npm..."
-    npm install -g @anthropic-ai/claude-code
+    sudo npm install -g @anthropic-ai/claude-code
 
     # Verify installation
     if command -v claude &>/dev/null; then
