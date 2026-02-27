@@ -35,7 +35,7 @@ This installs everything needed to run Claude Code sessions for OpenSearch PPL d
 
 **Skills** symlinked from `~/oss/agents/skills/` into `~/oss/ppl/.claude/skills/`:
 - `opensearch-ppl-developer` — PPL development assistant
-- `opensearch-ppl-team-review` — Code review assistant
+- `opensearch-sql-pr-review` — PR review assistant
 
 All skills are bundled in this repo under `skills/` (no external repo dependency).
 
@@ -261,15 +261,7 @@ agents/
 │   ├── clone-repos.sh          # Repos + skills symlinks
 │   ├── configure-env.sh        # ~/.bashrc additions
 │   └── verify.sh               # Validation & summary
-└── skills/                     # All skill definitions (symlinked into ppl repo)
+└── skills/                     # Skill definitions (symlinked into ppl repo)
     ├── opensearch-ppl-developer/
-    ├── opensearch-ppl-team-review/
-    ├── opensearch-sql-pr-review/
-    ├── bounty-hunter/
-    ├── ppl-perf-optimizer/
-    ├── distributed-ppl/
-    ├── distributed-ppl-connector/
-    ├── distributed-ppl-phase1/
-    ├── distributed-ppl-qa/
-    └── distributed-ppl-translate/
+    └── opensearch-sql-pr-review/
 ```

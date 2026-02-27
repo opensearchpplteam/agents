@@ -98,12 +98,12 @@ check_skills() {
         fail "skill    opensearch-ppl-developer (missing)"
     fi
 
-    if [ -L "${skills_dir}/opensearch-ppl-team-review" ] && [ -e "${skills_dir}/opensearch-ppl-team-review" ]; then
-        pass "skill    opensearch-ppl-team-review"
-    elif [ -L "${skills_dir}/opensearch-ppl-team-review" ]; then
-        fail "skill    opensearch-ppl-team-review (broken symlink)"
+    if [ -L "${skills_dir}/opensearch-sql-pr-review" ] && [ -e "${skills_dir}/opensearch-sql-pr-review" ]; then
+        pass "skill    opensearch-sql-pr-review"
+    elif [ -L "${skills_dir}/opensearch-sql-pr-review" ]; then
+        fail "skill    opensearch-sql-pr-review (broken symlink)"
     else
-        fail "skill    opensearch-ppl-team-review (missing)"
+        fail "skill    opensearch-sql-pr-review (missing)"
     fi
 }
 

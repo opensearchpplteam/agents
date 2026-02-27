@@ -80,9 +80,9 @@ setup_skills() {
         warn "Source not found: ${skill1_target}"
     fi
 
-    # Symlink: opensearch-ppl-team-review
-    local skill2_target="${agents_skills_dir}/opensearch-ppl-team-review"
-    local skill2_link="${ppl_skills_dir}/opensearch-ppl-team-review"
+    # Symlink: opensearch-sql-pr-review
+    local skill2_target="${agents_skills_dir}/opensearch-sql-pr-review"
+    local skill2_link="${ppl_skills_dir}/opensearch-sql-pr-review"
 
     if [ -L "$skill2_link" ]; then
         local current_target
@@ -90,13 +90,13 @@ setup_skills() {
         if [[ "$current_target" == *"treasuretoken"* ]]; then
             rm "$skill2_link"
             ln -s "$skill2_target" "$skill2_link"
-            success "Updated symlink: opensearch-ppl-team-review (was pointing to treasuretoken)"
+            success "Updated symlink: opensearch-sql-pr-review (was pointing to treasuretoken)"
         else
-            success "Symlink already exists: opensearch-ppl-team-review"
+            success "Symlink already exists: opensearch-sql-pr-review"
         fi
     elif [ -d "$skill2_target" ]; then
         ln -s "$skill2_target" "$skill2_link"
-        success "Created symlink: opensearch-ppl-team-review"
+        success "Created symlink: opensearch-sql-pr-review"
     else
         warn "Source not found: ${skill2_target}"
     fi
