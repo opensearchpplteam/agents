@@ -178,7 +178,6 @@ main() {
 
     echo -e "${BOLD}Repositories:${NC}"
     check_repo "sql (ppl)"      "$HOME/oss/ppl"
-    check_repo "treasuretoken"  "$HOME/oss/treasuretoken"
     check_repo "agents"         "$HOME/oss/agents"
     echo ""
 

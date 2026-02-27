@@ -31,12 +31,13 @@ This installs everything needed to run Claude Code sessions for OpenSearch PPL d
 | Repo | Local Path |
 |------|-----------|
 | `opensearchpplteam/sql` | `~/oss/ppl/` |
-| `penghuo/treasuretoken` | `~/oss/treasuretoken/` |
 | `opensearchpplteam/agents` | `~/oss/agents/` |
 
-**Skills** symlinked into `~/oss/ppl/.claude/skills/`:
+**Skills** symlinked from `~/oss/agents/skills/` into `~/oss/ppl/.claude/skills/`:
 - `opensearch-ppl-developer` — PPL development assistant
 - `opensearch-ppl-team-review` — Code review assistant
+
+All skills are bundled in this repo under `skills/` (no external repo dependency).
 
 **Claude Code** (`~/.claude/settings.json`):
 - Model: `global.anthropic.claude-opus-4-6-v1[1m]` via AWS Bedrock
@@ -54,9 +55,9 @@ This installs everything needed to run Claude Code sessions for OpenSearch PPL d
 ```
 ~/oss/                      # All source repos
 ~/oss/ppl/                  # OpenSearch SQL/PPL repo
-~/oss/ppl/.claude/skills/   # Skills symlinks
-~/oss/treasuretoken/        # Skills source repo
-~/oss/agents/               # This repo (installer)
+~/oss/ppl/.claude/skills/   # Skills symlinks → ~/oss/agents/skills/
+~/oss/agents/               # This repo (installer + skills)
+~/oss/agents/skills/        # All skill definitions
 ~/ppl-team/issues/          # Issue tracking workspace
 ~/ppl-team/logs/            # Session logs
 ~/ppl-team/review/          # Code review workspace
@@ -66,8 +67,8 @@ This installs everything needed to run Claude Code sessions for OpenSearch PPL d
 
 - **Amazon Linux 2023** EC2 instance (the installer warns on other OSes but will attempt to continue)
 - **sudo access** for installing system packages via dnf
-- **SSH key** registered with GitHub (needed for cloning repos via SSH)
 - **AWS credentials** configured with a `bedrock-prod` profile that has access to Bedrock
+- The installer will generate an SSH key and guide you through registering it with GitHub if needed
 
 ## Installation Steps
 
@@ -76,12 +77,12 @@ The installer runs 7 steps in order:
 1. **Install system packages** — Java 21, git, tmux, gh, Node.js 22, bc
 2. **Install Claude Code** — via `npm install -g @anthropic-ai/claude-code`
 3. **Configure Claude Code** — writes `~/.claude/settings.json` with Bedrock config
-4. **Configure Git & GitHub** — prompts for git name/email, runs `gh auth login` if needed
-5. **Clone repositories** — clones repos, creates skills symlinks, copies `CLAUDE.md`
+4. **Configure Git & GitHub** — prompts for git name/email, generates SSH key, guides you to register it on GitHub, runs `gh auth login`
+5. **Clone repositories** — clones sql and agents repos, creates skills symlinks
 6. **Configure shell environment** — appends AWS env vars to `~/.bashrc`
 7. **Verify installation** — checks all components and prints a pass/fail summary
 
-Steps 4 (Git/GitHub) is interactive — it prompts for your identity and may open a browser or device flow for GitHub authentication.
+Step 4 (Git/GitHub) is interactive — it prompts for your identity, generates an SSH key if needed, shows it to you with instructions to add it at https://github.com/settings/ssh/new, then verifies the connection before proceeding to `gh auth login`.
 
 ## Post-Install Verification
 
@@ -228,7 +229,7 @@ gh auth login --with-token < token.txt
 
 ### Skills symlinks are broken
 
-The skills symlinks point to `~/oss/treasuretoken/skills/`. If the treasuretoken repo wasn't cloned successfully, re-run:
+The skills symlinks point to `~/oss/agents/skills/`. If the agents repo wasn't cloned successfully, re-run:
 
 ```bash
 bash ~/oss/agents/setup/clone-repos.sh
@@ -252,12 +253,23 @@ bash ~/oss/agents/setup/configure-claude.sh
 agents/
 ├── install.sh                  # Main entry point (downloads & runs setup scripts)
 ├── README.md
-└── setup/
-    ├── install-tools.sh        # Java 21, git, tmux, gh, Node.js, bc
-    ├── install-claude.sh       # Claude Code CLI
-    ├── configure-claude.sh     # ~/.claude/settings.json
-    ├── configure-git.sh        # Git identity + gh auth
-    ├── clone-repos.sh          # Repos + skills symlinks
-    ├── configure-env.sh        # ~/.bashrc additions
-    └── verify.sh               # Validation & summary
+├── setup/
+│   ├── install-tools.sh        # Java 21, git, tmux, gh, Node.js, bc
+│   ├── install-claude.sh       # Claude Code CLI
+│   ├── configure-claude.sh     # ~/.claude/settings.json
+│   ├── configure-git.sh        # Git identity, SSH key + gh auth
+│   ├── clone-repos.sh          # Repos + skills symlinks
+│   ├── configure-env.sh        # ~/.bashrc additions
+│   └── verify.sh               # Validation & summary
+└── skills/                     # All skill definitions (symlinked into ppl repo)
+    ├── opensearch-ppl-developer/
+    ├── opensearch-ppl-team-review/
+    ├── opensearch-sql-pr-review/
+    ├── bounty-hunter/
+    ├── ppl-perf-optimizer/
+    ├── distributed-ppl/
+    ├── distributed-ppl-connector/
+    ├── distributed-ppl-phase1/
+    ├── distributed-ppl-qa/
+    └── distributed-ppl-translate/
 ```

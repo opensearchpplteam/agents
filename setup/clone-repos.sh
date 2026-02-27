@@ -46,56 +46,59 @@ clone_repo() {
 # ── Set up skills symlinks ────────────────────────────────────────────
 setup_skills() {
     local ppl_skills_dir="${OSS_DIR}/ppl/.claude/skills"
-    local treasure_skills_dir="${OSS_DIR}/treasuretoken/skills"
+    local agents_skills_dir="${OSS_DIR}/agents/skills"
 
     info "Setting up skills symlinks..."
 
     mkdir -p "$ppl_skills_dir"
 
+    if [ ! -d "$agents_skills_dir" ]; then
+        error "Skills directory not found: ${agents_skills_dir}"
+        error "Make sure the agents repo was cloned successfully."
+        return 1
+    fi
+
     # Symlink: opensearch-ppl-developer
-    local skill1_target="${treasure_skills_dir}/opensearch-ppl-developer"
+    local skill1_target="${agents_skills_dir}/opensearch-ppl-developer"
     local skill1_link="${ppl_skills_dir}/opensearch-ppl-developer"
 
     if [ -L "$skill1_link" ]; then
-        success "Symlink already exists: opensearch-ppl-developer"
+        # Update existing symlink if it points to the old location
+        local current_target
+        current_target=$(readlink "$skill1_link")
+        if [[ "$current_target" == *"treasuretoken"* ]]; then
+            rm "$skill1_link"
+            ln -s "$skill1_target" "$skill1_link"
+            success "Updated symlink: opensearch-ppl-developer (was pointing to treasuretoken)"
+        else
+            success "Symlink already exists: opensearch-ppl-developer"
+        fi
     elif [ -d "$skill1_target" ]; then
         ln -s "$skill1_target" "$skill1_link"
         success "Created symlink: opensearch-ppl-developer"
     else
         warn "Source not found: ${skill1_target}"
-        warn "Symlink for opensearch-ppl-developer not created."
     fi
 
     # Symlink: opensearch-ppl-team-review
-    local skill2_target="${treasure_skills_dir}/opensearch-ppl-team-review"
+    local skill2_target="${agents_skills_dir}/opensearch-ppl-team-review"
     local skill2_link="${ppl_skills_dir}/opensearch-ppl-team-review"
 
     if [ -L "$skill2_link" ]; then
-        success "Symlink already exists: opensearch-ppl-team-review"
+        local current_target
+        current_target=$(readlink "$skill2_link")
+        if [[ "$current_target" == *"treasuretoken"* ]]; then
+            rm "$skill2_link"
+            ln -s "$skill2_target" "$skill2_link"
+            success "Updated symlink: opensearch-ppl-team-review (was pointing to treasuretoken)"
+        else
+            success "Symlink already exists: opensearch-ppl-team-review"
+        fi
     elif [ -d "$skill2_target" ]; then
         ln -s "$skill2_target" "$skill2_link"
         success "Created symlink: opensearch-ppl-team-review"
     else
         warn "Source not found: ${skill2_target}"
-        warn "Symlink for opensearch-ppl-team-review not created."
-    fi
-}
-
-# ── Copy CLAUDE.md ────────────────────────────────────────────────────
-copy_claude_md() {
-    local source="${OSS_DIR}/treasuretoken/CLAUDE.md"
-    local dest="${OSS_DIR}/ppl/CLAUDE.md"
-
-    if [ -f "$dest" ]; then
-        success "CLAUDE.md already present in ~/oss/ppl/"
-        return 0
-    fi
-
-    if [ -f "$source" ]; then
-        cp "$source" "$dest"
-        success "Copied CLAUDE.md to ~/oss/ppl/"
-    else
-        warn "CLAUDE.md not found in treasuretoken repo. Skipping copy."
     fi
 }
 
@@ -105,12 +108,10 @@ main() {
     mkdir -p "$OSS_DIR"
 
     clone_repo "git@github.com:opensearchpplteam/sql.git"    "${OSS_DIR}/ppl"
-    clone_repo "git@github.com:penghuo/treasuretoken.git"    "${OSS_DIR}/treasuretoken"
     clone_repo "git@github.com:opensearchpplteam/agents.git" "${OSS_DIR}/agents"
 
     echo ""
     setup_skills
-    copy_claude_md
 }
 
 main "$@"
